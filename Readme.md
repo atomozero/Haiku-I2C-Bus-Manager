@@ -14,4 +14,4 @@ Accesso ai pin GPIO per SCL e SDA
 
 Compilazione
 Per compilare il bus manager, esegui il seguente comando nella directory del progetto:
-Copymake
+make
