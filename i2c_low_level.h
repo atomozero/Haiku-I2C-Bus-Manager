@@ -3,7 +3,8 @@
 
 #include "i2c_driver.h"
 
-status_t i2c_init_gpio();
+status_t i2c_init_gpio(i2c_bus* bus);
+status_t i2c_uninit_gpio(i2c_bus* bus);
 status_t i2c_start(i2c_bus* bus);
 status_t i2c_stop(i2c_bus* bus);
 status_t i2c_send_byte(i2c_bus* bus, uint8_t byte);

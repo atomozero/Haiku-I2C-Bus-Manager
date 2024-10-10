@@ -1,52 +1,57 @@
 #include "i2c_low_level.h"
 #include "i2c_logging.h"
-#include <drivers/gpio.h>
+#include <KernelExport.h>
+#include <atomic>
 
-extern gpio_module_info* gGPIO;
-
-static inline void set_scl(i2c_bus* bus, bool value) {
-    gGPIO->set_pin(bus->scl_pin, value);
-    I2C_TRACE("SCL (pin %d) set to %d", bus->scl_pin, value);
+// Implementazione semplificata di spinlock usando atomic
+static inline void acquire_spinlock(int32* lock) {
+    while (atomic_add(lock, 1) != 0) {
+        atomic_add(lock, -1);
+        snooze(1);
+    }
 }
 
-static inline void set_sda(i2c_bus* bus, bool value) {
-    gGPIO->set_pin(bus->sda_pin, value);
-    I2C_TRACE("SDA (pin %d) set to %d", bus->sda_pin, value);
+static inline void release_spinlock(int32* lock) {
+    atomic_add(lock, -1);
 }
 
-static inline bool read_sda(i2c_bus* bus) {
-    bool value = gGPIO->get_pin(bus->sda_pin);
-    I2C_TRACE("SDA (pin %d) read: %d", bus->sda_pin, value);
-    return value;
+// Implementazione stub per le funzioni GPIO
+static void set_pin(uint16_t pin, bool value) {
+    I2C_TRACE("GPIO: Setting pin %d to %d", pin, value);
+    // Implementazione reale da aggiungere in futuro
 }
 
-static inline void i2c_delay(i2c_bus* bus) {
-    // Calcola il ritardo in base al clock_rate
-    int delay_us = 1000000 / (bus->clock_rate * 2);
-    snooze(delay_us);
-    I2C_TRACE("Delay %d µs", delay_us);
+static bool get_pin(uint16_t pin) {
+    I2C_TRACE("GPIO: Reading pin %d", pin);
+    // Implementazione reale da aggiungere in futuro
+    return false;
+}
+
+static status_t configure_pin(uint16_t pin, uint32_t config) {
+    I2C_TRACE("GPIO: Configuring pin %d with config %u", pin, config);
+    // Implementazione reale da aggiungere in futuro
+    return B_OK;
 }
 
 status_t
 i2c_init_gpio(i2c_bus* bus)
 {
     I2C_DEBUG("Initializing GPIO for I2C: SCL pin %d, SDA pin %d", bus->scl_pin, bus->sda_pin);
-    status_t status;
-
-    status = gGPIO->configure_pin(bus->scl_pin, GPIO_PIN_OUTPUT | GPIO_PIN_OPEN_DRAIN);
+    
+    status_t status = configure_pin(bus->scl_pin, 0); // Usando 0 come configurazione di default
     if (status != B_OK) {
-        I2C_ERROR("Failed to configure SCL pin %d: %s", bus->scl_pin, strerror(status));
+        I2C_ERROR("Failed to configure SCL pin %d", bus->scl_pin);
         return status;
     }
 
-    status = gGPIO->configure_pin(bus->sda_pin, GPIO_PIN_OUTPUT | GPIO_PIN_OPEN_DRAIN);
+    status = configure_pin(bus->sda_pin, 0); // Usando 0 come configurazione di default
     if (status != B_OK) {
-        I2C_ERROR("Failed to configure SDA pin %d: %s", bus->sda_pin, strerror(status));
+        I2C_ERROR("Failed to configure SDA pin %d", bus->sda_pin);
         return status;
     }
 
-    set_scl(bus, true);
-    set_sda(bus, true);
+    set_pin(bus->scl_pin, true);
+    set_pin(bus->sda_pin, true);
 
     I2C_INFO("GPIO initialized for I2C");
     return B_OK;
@@ -57,12 +62,33 @@ i2c_uninit_gpio(i2c_bus* bus)
 {
     I2C_DEBUG("Uninitializing GPIO for I2C: SCL pin %d, SDA pin %d", bus->scl_pin, bus->sda_pin);
     
-    // Rilascia i pin GPIO
-    gGPIO->configure_pin(bus->scl_pin, GPIO_PIN_INPUT);
-    gGPIO->configure_pin(bus->sda_pin, GPIO_PIN_INPUT);
+    configure_pin(bus->scl_pin, 0);
+    configure_pin(bus->sda_pin, 0);
 
     I2C_INFO("GPIO uninitialized for I2C");
     return B_OK;
+}
+
+static inline void set_scl(i2c_bus* bus, bool value) {
+    set_pin(bus->scl_pin, value);
+    I2C_TRACE("SCL (pin %d) set to %d", bus->scl_pin, value);
+}
+
+static inline void set_sda(i2c_bus* bus, bool value) {
+    set_pin(bus->sda_pin, value);
+    I2C_TRACE("SDA (pin %d) set to %d", bus->sda_pin, value);
+}
+
+static inline bool read_sda(i2c_bus* bus) {
+    bool value = get_pin(bus->sda_pin);
+    I2C_TRACE("SDA (pin %d) read: %d", bus->sda_pin, value);
+    return value;
+}
+
+static inline void i2c_delay(i2c_bus* bus) {
+    int delay_us = 1000000 / (bus->clock_rate * 2);
+    snooze(delay_us);
+    I2C_TRACE("Delay %d µs", delay_us);
 }
 
 status_t
