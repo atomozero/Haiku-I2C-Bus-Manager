@@ -14,7 +14,8 @@ SRCS = i2c_driver.cpp i2c_low_level.cpp i2c_transfer.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 # Flags del compilatore
-CXXFLAGS = -c -iquote./ -Wno-multichar -D_KERNEL_MODE=1 -O3 -DDEBUG_MAX_LEVEL_FLOW=0 -DDEBUG_MAX_LEVEL_INFO=3
+#CXXFLAGS = -c -iquote./ -Wno-multichar -D_KERNEL_MODE=1 -O3 -DDEBUG_MAX_LEVEL_FLOW=0 -DDEBUG_MAX_LEVEL_INFO=3
+CXXFLAGS = -c -iquote./ -Wno-multichar -D_KERNEL_MODE=1 -O0 -g -DDEBUG_MAX_LEVEL_FLOW=4 -DDEBUG_MAX_LEVEL_INFO=4
 
 # Flags del linker
 LDFLAGS = -r
